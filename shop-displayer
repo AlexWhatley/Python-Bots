@@ -1,0 +1,61 @@
+import nextcord
+import os
+import requests
+from nextcord.ext import commands
+from bs4 import BeautifulSoup as soup
+my_secret = os.environ['DISCORD_TOKEN']
+
+intents = nextcord.Intents.default()
+intents.members = True
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents = intents)
+
+@bot.event
+async def on_ready():
+  print("Bot online")
+
+class dropdown(nextcord.ui.Select):
+  def __init__(self):
+    url = 'https://fnbr.co/shop'
+    html = requests.get(url)
+
+    s = soup(html.text, 'html.parser')
+
+    linksInit = s.find_all('a', href=True)
+    links = []
+
+    for i in linksInit:
+        a = i.get('href')
+        links.append(f"https://fnbr.co{a}")
+    links = links[28:-1]
+
+    namesInit = s.find_all('h4', class_='item-name')
+    names = []
+    for i in namesInit:
+      names.append(i.get_text())
+    options=[]
+    for x in names:
+      options.append(nextcord.SelectOption(label = x))
+    
+    super().__init__(placeholder="Pick an item", options=options, min_values =1, max_values=1)
+
+  async def callback(self, interaction: nextcord.Interaction):
+    await interaction.response.send_message(content = f"{self.values[0]}", embed = )
+
+class dropdownView(nextcord.ui.View):
+  def __init__(self):
+    super().__init__()
+    self.add_item(dropdown())
+
+testServerID = 996484683963576491
+
+@bot.slash_command(name = "fortshop", description = "displays the items in the fornite shop",guild_ids=[testServerID])
+async def fortshop(interaction:nextcord.Interaction):
+  view=dropdownView()
+  
+  await interaction.response.send_message("Pick an item to get more information:",view = view)
+  
+@bot.slash_command(guild_ids=[testServerID])
+async def test(interaction:nextcord.Interaction):
+  await interaction.response.send_message("yo")
+bot.run(my_secret)
